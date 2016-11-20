@@ -1,12 +1,53 @@
+# DGtalTools 0.9.3
+
+- *imageProcessing*:
+   - Creates imageProcessing directory. Add tools for doing image restoration and inpainting with Ambrosio-Tortorelli functional and discrete calculus. (Jacques-Olivier Lachaud, Marion Foare
+   [#280](https://github.com/DGtal-team/DGtalTools/pull/280))
+
+- *converters*:
+   - fix tool itk2vol which was not able to read and convert int type image.
+   (Bertrand Kerautret, [#276](https://github.com/DGtal-team/DGtalTools/pull/271))
+   - add a CLOSURE export mode in volBoundary2obj. Default mode has been changed to "BDRY"
+   (David Coeurjolly, [#281](https://github.com/DGtal-team/DGtalTools/pull/281))
+
+- *visualisation*: 
+   - Add SnapShot option for meshViewer and 3dVolViewer 
+     (useful to get visualisation without interaction like for scripting and/or 
+     online demonstration). It also contains a new option to display a mesh in 
+     3DvolViewer. 
+     (Bertrand Kerautret, [#282](https://github.com/DGtal-team/DGtalTools/pull/282))
+
+
 # DGtalTools 0.9.2
 
 - *global*:
+  - fix wrong Khalimsky space initialization in Freeman2Img.
+    (Roland Denis, [#271](https://github.com/DGtal-team/DGtalTools/pull/271))
+  - doxygen documentation added for all tools. (David Coeurjolly, Bertrand Kerautret, [#258](https://github.com/DGtal-team/DGtalTools/pull/258))
   - fix uses of temporaries when ConstAlias is needed.
     (Roland Denis, [#253](https://github.com/DGtal-team/DGtalTools/pull/253))
+  - renaming of the shapeGenerator folder to generators (David Coeurjolly, [#268](https://github.com/DGtal-team/DGtalTools/pull/268)))
 
 - *visualisation*:
+ - meshViewer: add a key to display mesh information about number of 
+    vertex/faces.
+    (Bertrand Kerautret,
+    [#273](https://github.com/DGtal-team/DGtalTools/pull/272))
+
+  - 3dSDPViewer: fix the mesh display which was not given with their original 
+   colors. (Bertrand Kerautret,
+   [#272](https://github.com/DGtal-team/DGtalTools/pull/272))
+
+  - 3dSDPViewer: add the possibility to display a set of point by using
+    different sphere sizes (specified in the input sdp file).
+    (Bertrand Kerautret,
+    [#252](https://github.com/DGtal-team/DGtalTools/pull/252))
   - sliceViewer: fix bug when imported image domain doesn't contain (0,0,0) point.
     (Roland Denis, [#256](https://github.com/DGtal-team/DGtalTools/pull/256))
+  - 3dSDPViewer: add an option to display on screen the selected voxel.
+    (Bertrand Kerautret,
+    [#257](https://github.com/DGtal-team/DGtalTools/pull/257))
+
 
 - *volumetric*:
   - fix reading options bug in volCComponentCounter and sdp2vol.
@@ -133,7 +174,7 @@
   - pgm2freeman: add new possibility to set automatically a threshold from the otsu algorithm.
   - HDF52vol: convert HDF5 to vol file format.
   - raw2HDF5: convert raw image to HDF5.
- 
+
 - *volumetric*:
   - homotopicThinning3D exploits now the GenericReader class and is no more limited to vol format.
   - volFlip: tool to flip all volume slice images according a given dimension.
@@ -146,7 +187,7 @@
   - 2dLocalEstimators: Improvement of 2dLocalEstimators + possibility to compare with noised data.
   - 3dLocalEstimators: Adding possibility to compare curvature (mean, gaussian and principal curvatures)
      with Integral Invariant and Monge via Jet Fitting + possibility to compare with noised data.
- 
+
 - *volumetric*:
   - volTools directory moved into volumetric.
 
@@ -214,4 +255,3 @@
   - volAddBorder: add a 1 voxel boundary with value 0 to a vol file.
   - volCComponentCounter: a simple program to count the number of connected components in a 3D image.
   - volSubSample: sub sample a vol file (division by 2 in each direction).
-

@@ -46,8 +46,114 @@ using namespace std;
 using namespace DGtal;
 
 
+/**
+ @page meshViewer meshViewer
+ 
+ @brief Displays OFF mesh file by using QGLviewer.
+
+ @b Usage:   meshViewer [input]
+
+ @b Allowed @b options @b are :
+ 
+ @code
+  -h [ --help ]                    display this message
+  -i [ --input ] arg               off files (.off), or OFS file (.ofs) 
+  -x [ --scaleX ] arg (=1)         set the scale value in the X direction 
+                                   (default 1.0)
+  -y [ --scaleY ] arg (=1)         set the scale value in the Y direction 
+                                   (default 1.0)
+  -z [ --scaleZ ] arg (=1)         set the scale value in the Z direction 
+                                   (default 1.0)
+  -w [ --minLineWidth ] arg (=1.5) set the min line width of the mesh faces 
+                                   (default 1.5)
+  --customColorMesh arg            set the R, G, B, A components of the colors 
+                                   of the mesh faces and eventually the color 
+                                   R, G, B, A of the mesh edge lines (set by 
+                                   default to black). 
+  --customColorSDP arg             set the R, G, B, A components of the colors 
+                                   of  the sdp view
+  -f [ --displayVectorField ] arg  display a vector field from a simple sdp 
+                                   file (two points per line)
+  --vectorFieldIndex arg           specify special indices for the two point 
+                                   coordinates (instead usinf the default 
+                                   indices: 0 1, 2, 3, 4, 5)
+  --customLineColor arg            set the R, G, B components of the colors of 
+                                   the lines displayed from the 
+                                   --displayVectorField option (red by 
+                                   default). 
+  -s [ --displaySDP ] arg          Add the display of a set of discrete points 
+                                   as ball of radius 0.5.
+  --SDPradius arg (=0.5)           change the ball radius to display a set of 
+                                   discrete points (used with displaySDP 
+                                   option)
+  -n [ --invertNormal ]            threshold min to define binary shape
+  -v [ --drawVertex ]              draw the vertex of the mesh
+  -d [ --doSnapShotAndExit]  arg,  save display snapshot into file. Notes that the camera setting is set by default according the last saved configuration (use SHIFT+Key_M to save current camera setting in the Viewer3D). If the camera setting was not saved it will use the default camera setting.
+
+ @endcode
 
 
+ @b Example: 
+
+
+ @code
+ $ meshViewer -i bunny.off
+    
+ @endcode
+
+ You should obtain such a result:
+
+ @image html resMeshViewer.png "Resulting visualization."
+ 
+
+ @see
+ @ref meshViewer.cpp
+
+ */
+
+
+/**
+ * Custom Viewer3D to override KeyPressEvent method and handle new key display.
+ * It also desactivate the double Rendering mode for more efficiency.
+ **/
+class CustomViewer3D: public Viewer3D<>
+{
+protected:
+
+  virtual void init()
+  {
+    Viewer3D<>::init();
+    Viewer3D<>::setKeyDescription ( Qt::Key_I, "Display mesh informations about #faces, #vertices" );
+    Viewer3D<>::setGLDoubleRenderingMode(false);
+    if(mySaveSnap){
+      QObject::connect(this, SIGNAL(drawFinished(bool)), this, SLOT(saveSnapshot(bool)));
+    }
+  }
+  virtual void keyPressEvent(QKeyEvent *e){
+    bool handled = false;
+    if( e->key() == Qt::Key_I)
+    {
+      handled=true;
+      myIsDisplayingInfoMode = !myIsDisplayingInfoMode;
+      std::stringstream sstring;
+      Viewer3D<>::displayMessage(QString(myIsDisplayingInfoMode ?
+                                                      myInfoDisplay.c_str() : " "), 1000000);
+      Viewer3D<>::updateGL();
+    }
+    if(!handled)
+      {
+        Viewer3D<>::keyPressEvent(e);        
+      }
+  };
+
+public: 
+  std::string myInfoDisplay = "No information loaded...";
+  bool myIsDisplayingInfoMode = false;
+  bool mySaveSnap = false;
+};
+
+
+  
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace po = boost::program_options;
@@ -71,8 +177,9 @@ int main( int argc, char** argv )
   ("customLineColor",po::value<std::vector<unsigned int> >()->multitoken(), "set the R, G, B components of the colors of the lines displayed from the --displayVectorField option (red by default). " )
   ("displaySDP,s", po::value<std::string>(), "Add the display of a set of discrete points as ball of radius 0.5.")
   ("SDPradius", po::value<double>()->default_value(0.5), "change the ball radius to display a set of discrete points (used with displaySDP option)")
-  ("invertNormal,n", "threshold min to define binary shape" )
-  ("drawVertex,v", "draw the vertex of the mesh" );
+  ("invertNormal,n", "invert face normal vectors." )
+  ("drawVertex,v", "draw the vertex of the mesh" )
+  ("doSnapShotAndExit,d", po::value<std::string>(), "save display snapshot into file. Notes that the camera setting is set by default according the last saved configuration (use SHIFT+Key_M to save current camera setting in the Viewer3D). If the camera setting was not saved it will use the default camera setting." );
   
   bool parseOK=true;
   po::variables_map vm;
@@ -177,7 +284,11 @@ int main( int argc, char** argv )
   
   
   QApplication application(argc,argv);
-  Viewer3D<> viewer;
+  CustomViewer3D viewer;
+  viewer.mySaveSnap = vm.count("doSnapShotAndExit");
+  if(vm.count("doSnapShotAndExit")){
+    viewer.setSnapshotFileName(QString(vm["doSnapShotAndExit"].as<std::string>().c_str()));
+  }
   std::stringstream title;
   title  << "Simple Mesh Viewer: " << inputFilenameVect[0];
   viewer.setWindowTitle(title.str().c_str());
@@ -252,11 +363,38 @@ int main( int argc, char** argv )
       viewer.setLineColor(vFieldLineColor);
       viewer.addLine(vectPt1[i], vectPt2[i]);
     }
-    
-    
   }
-  
-  
-  viewer << Viewer3D<>::updateDisplay;
+  unsigned int nbVertex = 0;
+  unsigned int nbFaces = 0;
+  for(auto const &m:  vectMesh)
+    {
+      nbVertex += m.nbVertex();
+      nbFaces +=m.nbFaces();
+    }
+  stringstream ss;
+  ss << "# faces: " << std::fixed << nbFaces << "    #vertex: " <<  nbVertex;
+  viewer.myInfoDisplay = ss.str();
+  viewer  << CustomViewer3D::updateDisplay;
+  if(vm.count("doSnapShotAndExit")){
+    // Appy cleaning just save the last snap
+    if(!viewer.restoreStateFromFile())
+      {
+        viewer.updateGL();
+      }    
+    std::string name = vm["doSnapShotAndExit"].as<std::string>();
+    std::string extension = name.substr(name.find_last_of(".") + 1);
+    std::string basename = name.substr(0, name.find_last_of("."));
+    for(int i=0; i< viewer.snapshotCounter()-1; i++){
+      std::stringstream s;
+      s << basename << "-"<< setfill('0') << setw(4)<<  i << "." << extension;
+      trace.info() << "erase temp file: " << s.str() << std::endl;
+      remove(s.str().c_str());
+    }
+    std::stringstream s;
+    s << basename << "-"<< setfill('0') << setw(4)<<  viewer.snapshotCounter()-1 << "." << extension;
+    rename(s.str().c_str(), name.c_str());
+    return 0;
+  }
+
   return application.exec();
 }
